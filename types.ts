@@ -13,10 +13,19 @@ export interface ContinentalData {
   topCountry: string;
 }
 
+export interface GlobalStats {
+  totalBoxOffice: string;
+  criticScore: number;
+  audienceScore: number;
+  globalReachIndex: number; // 1-10
+  releaseStatus: string;
+}
+
 export interface MovieAnalysis {
   title: string;
   summary: string;
   globalHighlights: string[];
+  globalStats: GlobalStats;
   regionalBreakdown: RegionalData[];
   continentalBreakdown: ContinentalData[];
   sources: { uri: string; title: string }[];

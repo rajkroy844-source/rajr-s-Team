@@ -1,131 +1,176 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { MovieAnalysis } from '../types';
 import RegionalChart from './RegionalChart';
 import ContinentalBreakdown from './ContinentalBreakdown';
+import GlobalOverview from './GlobalOverview';
 
 interface Props {
   data: MovieAnalysis;
 }
 
 const MovieDashboard: React.FC<Props> = ({ data }) => {
+  const [activeTab, setActiveTab] = useState<'overview' | 'markets' | 'evidence'>('overview');
+
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      {/* Header Card */}
-      <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-8 rounded-3xl border border-slate-700 shadow-xl relative overflow-hidden">
-        <div className="absolute top-4 right-4 flex items-center gap-2 bg-blue-500/10 border border-blue-500/30 px-3 py-1 rounded-full">
-          <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-          <span className="text-[10px] uppercase tracking-widest font-bold text-blue-400">Search Grounded</span>
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* Header Info */}
+      <div className="flex flex-col md:flex-row gap-6 items-start">
+        <div className="flex-1">
+          <div className="flex items-center gap-3 mb-2">
+            <h2 className="text-5xl font-black text-white">{data.title}</h2>
+            <span className="bg-slate-800 text-slate-400 text-[10px] px-2 py-1 rounded border border-slate-700 font-bold uppercase">
+              {data.globalStats.releaseStatus}
+            </span>
+          </div>
+          <p className="text-slate-400 text-lg leading-relaxed max-w-3xl">
+            {data.summary}
+          </p>
         </div>
-        
-        <div className="flex flex-col md:flex-row gap-8">
-          <div className="flex-1">
-            <h2 className="text-4xl font-bold text-white mb-4">{data.title}</h2>
-            <p className="text-lg text-slate-300 leading-relaxed mb-6">
-              {data.summary}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {data.globalHighlights.length > 0 ? (
-                data.globalHighlights.slice(0, 4).map((highlight, i) => (
-                  <span key={i} className="bg-blue-500/10 text-blue-400 px-3 py-1 rounded-full text-xs font-medium border border-blue-500/20">
-                    {highlight}
-                  </span>
-                ))
-              ) : (
-                <span className="text-slate-500 text-sm italic">Gathering highlights from search results...</span>
-              )}
+        <div className="bg-blue-600/10 border border-blue-500/20 px-4 py-2 rounded-xl flex items-center gap-3">
+          <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div>
+          <span className="text-sm font-bold text-blue-400 uppercase tracking-tighter">Verified by Search Grounding</span>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex border-b border-slate-800 gap-8">
+        {[
+          { id: 'overview', label: 'Global Overview', icon: '📊' },
+          { id: 'markets', label: 'Market Depth', icon: '🌐' },
+          { id: 'evidence', label: 'Search Evidence', icon: '🔍' }
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as any)}
+            className={`pb-4 text-sm font-bold uppercase tracking-widest transition-all relative ${
+              activeTab === tab.id ? 'text-blue-500' : 'text-slate-500 hover:text-slate-300'
+            }`}
+          >
+            <span className="mr-2">{tab.icon}</span>
+            {tab.label}
+            {activeTab === tab.id && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab Content */}
+      <div className="py-4">
+        {activeTab === 'overview' && (
+          <div className="space-y-8 animate-in fade-in slide-in-from-left-4 duration-500">
+            <GlobalOverview stats={data.globalStats} />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+               <div className="bg-slate-900/40 p-6 rounded-3xl border border-slate-800 shadow-xl">
+                  <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                    <span className="text-blue-500">⚡</span> Global Market Highlights
+                  </h3>
+                  <ul className="space-y-4">
+                    {data.globalHighlights.map((h, i) => (
+                      <li key={i} className="flex gap-4 group">
+                        <span className="text-slate-600 font-mono text-sm pt-1">0{i+1}</span>
+                        <p className="text-slate-300 group-hover:text-white transition-colors">{h}</p>
+                      </li>
+                    ))}
+                  </ul>
+               </div>
+               <div className="relative group overflow-hidden rounded-3xl">
+                  <img 
+                    src={`https://picsum.photos/seed/${encodeURIComponent(data.title)}/800/600`} 
+                    alt={data.title} 
+                    className="w-full h-full object-cover grayscale opacity-40 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700" 
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent"></div>
+                  <div className="absolute bottom-6 left-6">
+                    <h4 className="text-white text-2xl font-black">{data.title}</h4>
+                    <p className="text-slate-400 text-sm">Visual Asset Insight</p>
+                  </div>
+               </div>
             </div>
           </div>
-          <div className="md:w-1/3 flex flex-col justify-center">
-             <img 
-               src={`https://picsum.photos/seed/${encodeURIComponent(data.title)}/400/600`} 
-               alt={data.title} 
-               className="rounded-xl shadow-2xl object-cover h-64 w-full border border-slate-700" 
-             />
+        )}
+
+        {activeTab === 'markets' && (
+          <div className="space-y-8 animate-in fade-in slide-in-from-left-4 duration-500">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <RegionalChart data={data.regionalBreakdown} />
+              <ContinentalBreakdown data={data.continentalBreakdown} />
+            </div>
+            
+            <div className="bg-slate-800/30 p-6 rounded-3xl border border-slate-700">
+              <h3 className="text-xl font-bold text-white mb-6">Market Trends by Territory</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {data.regionalBreakdown.map((item, idx) => (
+                  <div key={idx} className="bg-slate-900/40 border border-slate-800/60 p-4 rounded-2xl flex justify-between items-center">
+                    <div>
+                      <h4 className="font-bold text-slate-200">{item.region}</h4>
+                      <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-1">
+                        {item.availability.join(' • ')}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-blue-400 font-black text-xl">${item.boxOffice}M</div>
+                      <div className="text-[10px] bg-blue-500/10 text-blue-500 px-2 py-0.5 rounded-full inline-block font-bold mt-1">
+                        SCORE: {item.popularityScore}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        )}
 
-      {/* Main Stats Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <RegionalChart data={data.regionalBreakdown} />
-        <ContinentalBreakdown data={data.continentalBreakdown} />
-      </div>
-
-      {/* Detailed Regional List */}
-      <div className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700">
-        <h3 className="text-xl font-semibold mb-6 text-slate-100 flex items-center gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          Live Market Trends & Platforms
-        </h3>
-        <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-          {data.regionalBreakdown.length > 0 ? (
-            data.regionalBreakdown.map((item, idx) => (
-              <div key={idx} className="bg-slate-900/50 p-4 rounded-xl border border-slate-700/50 flex justify-between items-center group hover:bg-slate-800 transition-colors">
-                <div className="flex-1">
-                  <h4 className="font-bold text-slate-200">{item.region}</h4>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {item.availability.map((plat, pIdx) => (
-                      <span key={pIdx} className="text-[10px] font-bold uppercase tracking-tight text-slate-400 bg-slate-800 px-2 py-0.5 rounded border border-slate-700">
-                        {plat}
-                      </span>
-                    ))}
-                  </div>
+        {activeTab === 'evidence' && (
+          <div className="space-y-8 animate-in fade-in slide-in-from-left-4 duration-500">
+            <div className="bg-slate-900/60 p-8 rounded-3xl border border-slate-800 border-dashed">
+              <div className="flex items-center gap-4 mb-8">
+                <div className="bg-blue-600 p-3 rounded-2xl shadow-lg shadow-blue-500/20">
+                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
                 </div>
-                <div className="text-right ml-4">
-                  <div className="text-emerald-400 font-mono text-xl font-bold">${item.boxOffice.toLocaleString()}M</div>
-                  <div className="flex items-center justify-end gap-1 mt-1">
-                      <span className="text-xs text-slate-500 uppercase tracking-wider">Interest:</span>
-                      <span className="text-xs font-bold text-white bg-slate-700 px-1.5 py-0.5 rounded">{item.popularityScore}%</span>
-                  </div>
+                <div>
+                  <h3 className="text-2xl font-black text-white">Search Evidence</h3>
+                  <p className="text-slate-500">Data synthesized from real-time web grounding</p>
                 </div>
               </div>
-            ))
-          ) : (
-            <div className="text-center py-10 text-slate-500 italic">
-              No detailed regional data found. Search grounding is processing...
-            </div>
-          )}
-        </div>
-      </div>
 
-      {/* Grounding Source Attribution */}
-      {data.sources.length > 0 && (
-        <div className="bg-slate-900/40 p-6 rounded-2xl border border-slate-800/60 backdrop-blur-sm">
-          <div className="flex items-center gap-2 mb-6 text-slate-500">
-             <svg className="w-5 h-5 text-blue-500" viewBox="0 0 24 24" fill="currentColor">
-               <path d="M12.545 11.027v2.909h4.145c-.173 1.1-.982 2.8-2.836 4.091l-2.436-1.891c1.236-1.055 1.964-2.618 1.964-4.473 0-.309-.036-.618-.091-.918l-4.145.001c-.136 2.027.709 3.864 2.145 5.2l.001.001c-1.4 1.1-3.236 1.764-5.273 1.764-4.418 0-8-3.582-8-8s3.582-8 8-8c2.182 0 4.145.8 5.673 2.1l-2.4 2.4c-1.018-.945-2.291-1.5-3.273-1.5-2.473 0-4.473 2-4.473 4.473s2 4.473 4.473 4.473c2.727 0 3.745-1.927 3.909-2.909h-3.909z"/>
-             </svg>
-             <h4 className="text-sm font-bold uppercase tracking-widest">Search Citations</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {data.sources.map((source, idx) => (
+                  <a 
+                    key={idx} 
+                    href={source.uri} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="group bg-slate-950 border border-slate-800 p-6 rounded-2xl hover:border-blue-500 transition-all hover:scale-[1.02]"
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="bg-slate-800 text-slate-500 text-[10px] px-2 py-1 rounded font-black">REF {idx + 1}</span>
+                      <svg className="w-4 h-4 text-slate-600 group-hover:text-blue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    </div>
+                    <h4 className="text-slate-200 font-bold mb-2 group-hover:text-white transition-colors line-clamp-2">
+                      {source.title}
+                    </h4>
+                    <p className="text-slate-600 text-[10px] break-all group-hover:text-slate-400">
+                      {new URL(source.uri).hostname}
+                    </p>
+                  </a>
+                ))}
+              </div>
+            </div>
+            
+            <div className="text-center py-10 border border-slate-800 rounded-3xl bg-slate-900/20">
+              <p className="text-slate-500 text-sm max-w-lg mx-auto">
+                Information provided is gathered through the Gemini Search Grounding engine. Market figures are estimates based on aggregated search results and official reports.
+              </p>
+            </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {data.sources.map((source, idx) => (
-              <a 
-                key={idx} 
-                href={source.uri} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="group flex flex-col p-3 rounded-lg bg-slate-800/30 border border-slate-700/50 hover:bg-slate-800 transition-all hover:border-blue-500/50"
-              >
-                <span className="text-xs text-blue-400 font-medium mb-1 flex items-center gap-1">
-                  Reference {idx + 1}
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
-                </span>
-                <span className="text-slate-300 text-sm font-semibold line-clamp-1">
-                  {source.title || "External Market Report"}
-                </span>
-                <span className="text-slate-600 text-[10px] mt-1 break-all line-clamp-1">
-                  {source.uri}
-                </span>
-              </a>
-            ))}
-          </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

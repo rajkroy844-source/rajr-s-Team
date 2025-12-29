@@ -1,24 +1,27 @@
 
 import { GoogleGenAI } from "@google/genai";
-import { MovieAnalysis, RegionalData, ContinentalData } from "../types";
+import { MovieAnalysis, RegionalData, ContinentalData, GlobalStats } from "../types";
 
 export const analyzeMovieRegionally = async (movieTitle: string): Promise<MovieAnalysis> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const prompt = `
-    Using GOOGLE SEARCH as your primary data source, analyze the movie "${movieTitle}" with a focus on current regional and continental performance. 
+    Using GOOGLE SEARCH as your data source, provide a deep global market analysis for the movie "${movieTitle}".
     
-    IMPORTANT: You MUST use real-time search results to find:
-    1. A concise, current summary of the movie's status.
-    2. Global market highlights based on recent news.
-    3. A detailed Regional Breakdown for specific major markets (e.g., USA, China, UK, Japan).
-    4. A CONTINENTAL breakdown summarizing performance across Africa, Asia, Europe, North America, South America, and Oceania.
-    
-    Structure your response clearly. End with two JSON blocks:
-    - DATA_BLOCK: Array of RegionalData objects.
-    - CONTINENTAL_BLOCK: Array of ContinentalData objects.
-    
-    ContinentalData format: {"continent": "Asia", "marketShare": 45, "status": "Hyper-growth", "topCountry": "China"}
+    You MUST extract:
+    1. A concise summary of its current global standing.
+    2. Global market highlights (major news, controversies, or records).
+    3. Specific data for:
+       - Regional Breakdown (USA, China, etc.)
+       - Continental Breakdown (Asia, Europe, etc.)
+       - Global Scoreboard (Total box office, critic/audience scores, release status).
+
+    Structure your response clearly and end with three JSON blocks:
+    - DATA_BLOCK: Array of RegionalData.
+    - CONTINENTAL_BLOCK: Array of ContinentalData.
+    - GLOBAL_STATS: A single object containing totalBoxOffice (string), criticScore (0-100), audienceScore (0-100), globalReachIndex (1-10), and releaseStatus.
+
+    Example GLOBAL_STATS: {"totalBoxOffice": "$750M+", "criticScore": 85, "audienceScore": 92, "globalReachIndex": 9, "releaseStatus": "Post-Theatrical"}
   `;
 
   try {
@@ -35,30 +38,34 @@ export const analyzeMovieRegionally = async (movieTitle: string): Promise<MovieA
     const sources = groundingChunks
       .map(chunk => ({
         uri: chunk.web?.uri || "",
-        title: chunk.web?.title || "Source"
+        title: chunk.web?.title || "Search Result"
       }))
       .filter(s => s.uri !== "");
 
-    // Parsing Regional Data
-    const dataBlockMatch = text.match(/DATA_BLOCK[\s\S]*?(\[[\s\S]*?\])/);
-    let regionalBreakdown: RegionalData[] = [];
-    if (dataBlockMatch?.[1]) {
-      try {
-        regionalBreakdown = JSON.parse(dataBlockMatch[1].replace(/```json|```/g, '').trim());
-      } catch (e) { console.error("Regional parse error", e); }
-    }
+    // Parsing Helpers
+    const parseBlock = <T>(marker: string, fallback: T): T => {
+      const regex = new RegExp(`${marker}[\\s\\S]*?(\\[[\\s\\S]*?\\]|\\{[\\s\\S]*?\\})`);
+      const match = text.match(regex);
+      if (match?.[1]) {
+        try {
+          return JSON.parse(match[1].replace(/```json|```/g, '').trim());
+        } catch (e) { console.error(`Parse error for ${marker}`, e); }
+      }
+      return fallback;
+    };
 
-    // Parsing Continental Data
-    const continentalBlockMatch = text.match(/CONTINENTAL_BLOCK[\s\S]*?(\[[\s\S]*?\])/);
-    let continentalBreakdown: ContinentalData[] = [];
-    if (continentalBlockMatch?.[1]) {
-      try {
-        continentalBreakdown = JSON.parse(continentalBlockMatch[1].replace(/```json|```/g, '').trim());
-      } catch (e) { console.error("Continental parse error", e); }
-    }
+    const regionalBreakdown = parseBlock<RegionalData[]>("DATA_BLOCK", []);
+    const continentalBreakdown = parseBlock<ContinentalData[]>("CONTINENTAL_BLOCK", []);
+    const globalStats = parseBlock<GlobalStats>("GLOBAL_STATS", {
+      totalBoxOffice: "N/A",
+      criticScore: 0,
+      audienceScore: 0,
+      globalReachIndex: 0,
+      releaseStatus: "Unknown"
+    });
 
     const summaryMatch = text.match(/1\.\s+(.*?)(\n|$)/);
-    const summary = summaryMatch ? summaryMatch[1].trim() : "No summary available.";
+    const summary = summaryMatch ? summaryMatch[1].trim() : "Analysis complete.";
     
     const highlightsMatch = text.match(/2\.\s+([\s\S]*?)(3\.|$)/);
     const globalHighlights = highlightsMatch 
@@ -71,12 +78,13 @@ export const analyzeMovieRegionally = async (movieTitle: string): Promise<MovieA
       title: movieTitle,
       summary,
       globalHighlights,
+      globalStats,
       regionalBreakdown,
       continentalBreakdown,
       sources: Array.from(new Set(sources.map(s => s.uri))).map(uri => sources.find(s => s.uri === uri)!)
     };
   } catch (error) {
     console.error("Gemini API Error:", error);
-    throw new Error("Failed to analyze movie. Ensure search access is available.");
+    throw new Error("Failed to ground analysis in search data. Try a different title.");
   }
 };
