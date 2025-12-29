@@ -1,0 +1,7 @@
+{
+  "name": "CineRegional - Movie Market Analyzer",
+  "description": "A sophisticated tool that uses Gemini's search grounding to provide a comprehensive regional breakdown of movie performance, streaming availability, and global trends.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
